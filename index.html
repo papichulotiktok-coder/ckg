@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CKG Bot — Data Manager</title>
+  <style>
+    :root {
+      --teal:   #00897b;
+      --teal-d: #00695c;
+      --teal-l: #e0f5f1;
+      --green:  #2e7d32;
+      --red:    #b71c1c;
+      --bg:     #f0f7f4;
+      --card:   #ffffff;
+      --border: #e0ece8;
+      --text:   #1a2e24;
+      --muted:  #607d8b;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+    /* NAV */
+    nav{background:linear-gradient(135deg,var(--teal),var(--teal-d));padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;box-shadow:0 2px 12px rgba(0,0,0,.15)}
+    .nav-brand{display:flex;align-items:center;gap:10px;color:#fff;font-size:16px;font-weight:700}
+    .nav-brand span{font-size:22px}
+    .nav-badge{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700;color:#e0f2f1;letter-spacing:.5px}
+    .nav-hint{font-size:11px;color:rgba(255,255,255,.7)}
+
+    /* LAYOUT */
+    .container{max-width:860px;margin:0 auto;padding:28px 20px}
+    .page-title{font-size:24px;font-weight:700;color:var(--text);margin-bottom:4px}
+    .page-sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+
+    /* CARDS */
+    .card{background:var(--card);border-radius:16px;padding:24px;border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,137,123,.06);margin-bottom:20px}
+    .card-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+    .card-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .icon-blue{background:#e3f2fd}
+    .icon-teal{background:var(--teal-l)}
+    .icon-green{background:#e8f5e9}
+    .card-head-text h2{font-size:15px;font-weight:700;color:var(--text)}
+    .card-head-text p{font-size:12px;color:var(--muted)}
+
+    /* STEPS */
+    .steps{display:flex;gap:8px;margin-bottom:24px}
+    .step-item{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+    .step-item.active{border-color:var(--teal);background:var(--teal-l)}
+    .step-num{width:28px;height:28px;border-radius:50%;background:var(--border);color:var(--muted);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 6px}
+    .step-item.active .step-num{background:var(--teal);color:#fff}
+    .step-label{font-size:11px;font-weight:600;color:var(--muted)}
+    .step-item.active .step-label{color:var(--teal-d)}
+
+    /* BUTTONS */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:10px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+    .btn:active{transform:scale(.97)}
+    .btn-teal{background:linear-gradient(135deg,var(--teal),var(--teal-d));color:#fff;width:100%}
+    .btn-teal:hover{background:linear-gradient(135deg,#00acc1,#0097a7);box-shadow:0 4px 14px rgba(0,137,123,.3)}
+    .btn-blue{background:linear-gradient(135deg,#e8f4fd,#bbdefb);color:#1565c0;border:1px solid #90caf9;width:100%}
+    .btn-blue:hover{background:linear-gradient(135deg,#bbdefb,#90caf9);box-shadow:0 3px 10px rgba(21,101,192,.2)}
+    .btn-red-sm{background:linear-gradient(135deg,#fce8e8,#f8cdd0);color:var(--red);border:1px solid #ef9a9a;padding:6px 14px;font-size:12px;border-radius:8px}
+    .btn-red-sm:hover{background:linear-gradient(135deg,#f8cdd0,#ef9a9a)}
+
+    /* DROP ZONE */
+    .drop-zone{border:2.5px dashed #b2dfdb;border-radius:14px;padding:48px 24px;text-align:center;background:#f7fdfc;cursor:pointer;transition:all .2s;position:relative}
+    .drop-zone:hover,.drop-zone.over{border-color:var(--teal);background:var(--teal-l)}
+    .drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+    .drop-icon{font-size:48px;margin-bottom:12px}
+    .drop-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
+    .drop-sub{font-size:13px;color:var(--muted)}
+    .drop-sub b{color:var(--teal)}
+
+    /* DATA TABLE */
+    .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    thead{background:var(--teal-l)}
+    th{padding:10px 12px;text-align:left;font-weight:700;color:var(--teal-d);font-size:11px;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap}
+    td{padding:9px 12px;border-top:1px solid var(--border);color:var(--text);white-space:nowrap}
+    tr:hover td{background:#f7fdfc}
+    .badge-jk{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+    .badge-l{background:#e3f2fd;color:#1565c0}
+    .badge-p{background:#fce4ec;color:#880e4f}
+
+    /* STATUS BANNER */
+    .banner{border-radius:12px;padding:16px 18px;margin-bottom:16px;display:flex;align-items:flex-start;gap:12px}
+    .banner-ok{background:linear-gradient(135deg,#e6f9f2,#d0f5e8);border:1px solid #a5d6a7}
+    .banner-info{background:linear-gradient(135deg,#e3f2fd,#bbdefb);border:1px solid #90caf9}
+    .banner-warn{background:#fff8e1;border:1px solid #ffe082}
+    .banner-icon{font-size:22px;flex-shrink:0;margin-top:1px}
+    .banner-title{font-size:13px;font-weight:700;color:var(--green)}
+    .banner-info .banner-title{color:#1565c0}
+    .banner-warn .banner-title{color:#e65100}
+    .banner-sub{font-size:12px;color:#388e3c;margin-top:2px}
+    .banner-info .banner-sub{color:#1976d2}
+    .banner-warn .banner-sub{color:#bf360c}
+
+    /* DATA HEADER ROW */
+    .data-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .data-count{font-size:13px;font-weight:700;color:var(--teal-d)}
+    .data-actions{display:flex;gap:8px}
+
+    /* EMPTY STATE */
+    .empty{text-align:center;padding:40px 20px;color:var(--muted)}
+    .empty-icon{font-size:48px;margin-bottom:12px}
+    .empty p{font-size:13px}
+
+    /* STAT GRID */
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+    .stat-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+    .stat-num{font-size:24px;font-weight:700;color:var(--teal)}
+    .stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+
+    /* FOOTER */
+    footer{text-align:center;font-size:11px;color:#b0bec5;padding:24px;border-top:1px solid var(--border);margin-top:8px}
+    footer a{color:var(--teal);text-decoration:none}
+
+    /* RESPONSIVE */
+    @media(max-width:600px){
+      .steps{flex-direction:column}
+      .stats{grid-template-columns:1fr 1fr}
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <span>🏥</span>
+    <div>
+      <div>CKG Bot</div>
+      <div class="nav-hint">Data Manager</div>
+    </div>
+  </div>
+  <span class="nav-badge">v1.0</span>
+</nav>
+
+<div class="container">
+  <div class="page-title">Sehat Indonesiaku — CKG Bot</div>
+  <p class="page-sub">Upload file Excel, kelola data peserta, lalu gunakan Extension untuk input otomatis ke website.</p>
+
+  <!-- STEPS -->
+  <div class="steps">
+    <div class="step-item active" id="step1">
+      <div class="step-num">1</div>
+      <div class="step-label">Download Template</div>
+    </div>
+    <div class="step-item" id="step2">
+      <div class="step-num">2</div>
+      <div class="step-label">Upload Excel</div>
+    </div>
+    <div class="step-item" id="step3">
+      <div class="step-num">3</div>
+      <div class="step-label">Verifikasi Data</div>
+    </div>
+    <div class="step-item" id="step4">
+      <div class="step-num">4</div>
+      <div class="step-label">Jalankan Bot</div>
+    </div>
+  </div>
+
+  <!-- CARD 1: TEMPLATE -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-icon icon-blue">📋</div>
+      <div class="card-head-text">
+        <h2>Download Template Excel</h2>
+        <p>Template sudah berisi kolom yang sesuai dengan form pendaftaran CKG</p>
+      </div>
+    </div>
+    <button class="btn btn-blue" id="btnDownload">⬇️ Download Template Excel</button>
+  </div>
+
+  <!-- CARD 2: UPLOAD -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-icon icon-teal">📂</div>
+      <div class="card-head-text">
+        <h2>Upload Data Excel</h2>
+        <p>Drag & drop atau pilih file Excel yang sudah diisi</p>
+      </div>
+    </div>
+
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv"/>
+      <div class="drop-icon">📂</div>
+      <div class="drop-title">Drag & Drop file Excel ke sini</div>
+      <div class="drop-sub">atau klik untuk pilih file &nbsp;·&nbsp; <b>.xlsx / .xls / .csv</b></div>
+    </div>
+  </div>
+
+  <!-- CARD 3: DATA (tersembunyi jika kosong) -->
+  <div class="card" id="cardData" style="display:none">
+    <div class="card-head">
+      <div class="card-icon icon-green">✅</div>
+      <div class="card-head-text">
+        <h2>Data Peserta</h2>
+        <p>Data siap diinput oleh Extension Bot</p>
+      </div>
+    </div>
+
+    <div id="statArea"></div>
+
+    <div class="banner banner-info" id="bannerExt">
+      <div class="banner-icon">🔌</div>
+      <div>
+        <div class="banner-title">Buka Extension CKG Bot di browser</div>
+        <div class="banner-sub">Klik icon Extension → "Ambil Data dari Website" → "Mulai Mengisi"</div>
+      </div>
+    </div>
+
+    <div class="data-header">
+      <div class="data-count" id="dataCount">0 data</div>
+      <div class="data-actions">
+        <button class="btn btn-red-sm" id="btnClear">🗑️ Hapus Semua</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>NIK</th>
+            <th>Nama Lengkap</th>
+            <th>Tgl Lahir</th>
+            <th>Jenis Kelamin</th>
+            <th>No WA</th>
+            <th>Tgl Periksa</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EMPTY STATE (jika belum ada data) -->
+  <div id="emptyState">
+    <div class="empty">
+      <div class="empty-icon">📋</div>
+      <p>Belum ada data. Download template lalu upload file Excel yang sudah diisi.</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  CKG Bot &nbsp;·&nbsp; Dibuat untuk mempercepat input data Cek Kesehatan Gratis &nbsp;·&nbsp;
+  <a href="https://sehatindonesiaku.kemkes.go.id" target="_blank">sehatindonesiaku.kemkes.go.id</a>
+</footer>
+
+<script src="xlsx.full.min.js"></script>
+<script>
+// ── STORAGE KEY (harus sama dengan yang dibaca extension) ──
+var STORAGE_KEY = 'ckg_bot_data';
+
+// ── TEMPLATE KOLOM ──
+var COLS = [
+  { h:'NIK',                 note:'16 digit angka',         ex:['1234567890123456','9876543210987654','1111222233334444'] },
+  { h:'Nama Lengkap',        note:'Sesuai KTP',             ex:['Budi Santoso','Siti Rahayu','Ahmad Fauzi'] },
+  { h:'Tanggal Lahir',       note:'Format: DD/MM/YYYY',     ex:['15/06/1990','20/03/1985','10/12/1995'] },
+  { h:'Jenis Kelamin',       note:'Laki-Laki / Perempuan',  ex:['Laki-Laki','Perempuan','Laki-Laki'] },
+  { h:'No WhatsApp',         note:'Tanpa angka 0 di depan', ex:['81234567890','85678901234','82298765432'] },
+  { h:'Tanggal Pemeriksaan', note:'Format: DD/MM/YYYY',     ex:['22/04/2026','22/04/2026','23/04/2026'] },
+];
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', function(){
+  loadStoredData();
+  setupDropZone();
+});
+
+// ── DOWNLOAD TEMPLATE ──
+document.getElementById('btnDownload').addEventListener('click', function(){
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet([
+    COLS.map(function(c){return c.h;}),
+    COLS.map(function(c){return c.note;}),
+    COLS.map(function(c){return c.ex[0];}),
+    COLS.map(function(c){return c.ex[1];}),
+    COLS.map(function(c){return c.ex[2];}),
+  ]);
+  ws['!cols'] = COLS.map(function(c){return {wch: Math.max(c.h.length+4, 20)};});
+  XLSX.utils.book_append_sheet(wb, ws, 'Data CKG');
+  var out  = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+  var blob = new Blob([out], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href=url; a.download='Template_CKG_Bot.xlsx';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);}, 1000);
+  setStep(1);
+});
+
+// ── DROP ZONE ──
+function setupDropZone(){
+  var dz = document.getElementById('dropZone');
+  var fi = document.getElementById('fileInput');
+  fi.addEventListener('change', function(e){ if(e.target.files[0]) readFile(e.target.files[0]); });
+  dz.addEventListener('dragover',  function(e){ e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', function(){ dz.classList.remove('over'); });
+  dz.addEventListener('drop', function(e){
+    e.preventDefault(); dz.classList.remove('over');
+    if(e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
+  });
+}
+
+// ── READ FILE ──
+function readFile(file){
+  var ext = file.name.split('.').pop().toLowerCase();
+  if(['xlsx','xls','csv'].indexOf(ext) < 0){
+    alert('Format file harus .xlsx, .xls, atau .csv'); return;
+  }
+  var reader = new FileReader();
+  reader.onerror = function(){ alert('Gagal membaca file!'); };
+  reader.onload  = function(e){ parseFile(e.target.result, file.name, ext); };
+  if(ext==='csv') reader.readAsText(file,'UTF-8');
+  else            reader.readAsArrayBuffer(file);
+}
+
+// ── PARSE FILE ──
+function parseFile(result, fname, ext){
+  try {
+    var wb = ext==='csv'
+      ? XLSX.read(result, {type:'string'})
+      : XLSX.read(new Uint8Array(result), {type:'array', cellDates:false, raw:false});
+
+    var ws   = wb.Sheets[wb.SheetNames[0]];
+    var rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, dateNF:'dd/mm/yyyy'});
+
+    if(!rows || rows.length < 2){ alert('File kosong!'); return; }
+
+    // Skip header (row 0) + keterangan (row 1 jika bukan angka)
+    var start = 1;
+    var r1c0  = String((rows[1]&&rows[1][0])||'').trim();
+    if(r1c0 && !/^\d{10,16}$/.test(r1c0)) start = 2;
+
+    var data = [];
+    for(var i=start; i<rows.length; i++){
+      var row  = rows[i];
+      if(!row||!row.length) continue;
+      var nik  = String(row[0]||'').trim();
+      var nama = String(row[1]||'').trim();
+      if(!nik && !nama) continue;
+      data.push({
+        nik         : nik,
+        nama        : nama,
+        tglLahir    : normDate(String(row[2]||'').trim()),
+        jenisKelamin: String(row[3]||'').trim(),
+        noWa        : String(row[4]||'').trim().replace(/^0+/,''),
+        tglPeriksa  : normDate(String(row[5]||'').trim()),
+      });
+    }
+
+    if(data.length===0){ alert('Tidak ada data valid di file!'); return; }
+
+    // Simpan ke localStorage — dibaca extension via content script
+    var payload = {
+      data        : data,
+      fileName    : fname,
+      uploadedAt  : new Date().toISOString(),
+      totalRows   : data.length
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+
+    renderData(data, fname);
+    setStep(3);
+
+  } catch(e) {
+    alert('Error membaca file: ' + e.message);
+    console.error(e);
+  }
+}
+
+// ── NORMALIZE TANGGAL ──
+function normDate(v){
+  if(!v) return '';
+  if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)) return v;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(v)){ var p=v.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+  if(/^\d{1,2}-\d{1,2}-\d{4}$/.test(v)) return v.replace(/-/g,'/');
+  if(/^\d{5}$/.test(v)){
+    var d=new Date((parseInt(v)-25569)*86400000);
+    return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'/'+d.getUTCFullYear();
+  }
+  return v;
+}
+
+// ── LOAD DARI LOCALSTORAGE ──
+function loadStoredData(){
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    var p = JSON.parse(raw);
+    if(p && p.data && p.data.length > 0){
+      renderData(p.data, p.fileName);
+      setStep(3);
+    }
+  } catch(e) { console.error('loadStoredData:', e); }
+}
+
+// ── RENDER TABLE ──
+function renderData(data, fname){
+  document.getElementById('emptyState').style.display  = 'none';
+  document.getElementById('cardData').style.display    = 'block';
+  document.getElementById('dataCount').textContent     = data.length + ' data peserta';
+
+  // Stats
+  var uniqTgl = [];
+  data.forEach(function(d){ if(d.tglPeriksa && uniqTgl.indexOf(d.tglPeriksa)<0) uniqTgl.push(d.tglPeriksa); });
+  var lk = data.filter(function(d){ return /laki/i.test(d.jenisKelamin); }).length;
+  document.getElementById('statArea').innerHTML =
+    '<div class="stats">' +
+    '<div class="stat-box"><div class="stat-num">'+data.length+'</div><div class="stat-lbl">Total Peserta</div></div>' +
+    '<div class="stat-box"><div class="stat-num">'+lk+'</div><div class="stat-lbl">Laki-Laki</div></div>' +
+    '<div class="stat-box"><div class="stat-num">'+(data.length-lk)+'</div><div class="stat-lbl">Perempuan</div></div>' +
+    '</div>';
+
+  // Table rows
+  var html = '';
+  data.forEach(function(d, i){
+    var jkBadge = /laki/i.test(d.jenisKelamin)
+      ? '<span class="badge-jk badge-l">Laki-Laki</span>'
+      : '<span class="badge-jk badge-p">Perempuan</span>';
+    html += '<tr>' +
+      '<td>'+(i+1)+'</td>' +
+      '<td>'+esc(d.nik)+'</td>' +
+      '<td><b>'+esc(d.nama)+'</b></td>' +
+      '<td>'+esc(d.tglLahir)+'</td>' +
+      '<td>'+jkBadge+'</td>' +
+      '<td>'+esc(d.noWa)+'</td>' +
+      '<td>'+esc(d.tglPeriksa)+'</td>' +
+    '</tr>';
+  });
+  document.getElementById('tableBody').innerHTML = html;
+
+  // Scroll ke tabel
+  document.getElementById('cardData').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ── CLEAR DATA ──
+document.getElementById('btnClear').addEventListener('click', function(){
+  if(!confirm('Hapus semua data dari memori?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  document.getElementById('cardData').style.display   = 'none';
+  document.getElementById('emptyState').style.display = 'block';
+  document.getElementById('fileInput').value          = '';
+  setStep(1);
+});
+
+// ── SET STEP ──
+function setStep(n){
+  for(var i=1;i<=4;i++){
+    document.getElementById('step'+i).classList.toggle('active', i<=n);
+  }
+}
+
+// ── ESCAPE HTML ──
+function esc(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
